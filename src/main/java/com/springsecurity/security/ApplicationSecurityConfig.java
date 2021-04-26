@@ -13,6 +13,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 	protected void configure(HttpSecurity http) throws Exception {
 		http
 		.authorizeRequests()  //queremos autorizar peticiones
+		.antMatchers("/", "index", "/css/*", "/js/*")
+		.permitAll()
 		.anyRequest() //Cualquier request del API
 		.authenticated() // Debe estar autenticado
 		.and()
