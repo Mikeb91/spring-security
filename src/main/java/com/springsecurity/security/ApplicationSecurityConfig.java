@@ -52,6 +52,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 			.roles(ADMIN.name())
 			.build();
 		
+		//This is ROLE BASED AUTHENTICATION
 		
 		return new InMemoryUserDetailsManager(
 			annaSmithUser,
