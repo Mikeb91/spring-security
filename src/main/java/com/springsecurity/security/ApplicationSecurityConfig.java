@@ -30,18 +30,18 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
-		.csrf().disable() // TODO: I WILL LEARN THIS IN THE NEXT SECTION
-		.authorizeRequests()  //queremos autorizar peticiones
+		.csrf().disable() 
+		.authorizeRequests()  
 		.antMatchers("/", "index", "/css/*", "/js/*").permitAll()
-		.antMatchers("/api/**").hasRole(STUDENT.name()) //Protects the end-point with the specified role
-		.antMatchers(HttpMethod.DELETE, "management/api/**").hasAuthority(COURSE_WRITE.name())
-		.antMatchers(HttpMethod.POST, "management/api/**").hasAuthority(COURSE_WRITE.name())  //PERMISSION BASED AUTH 
-		.antMatchers(HttpMethod.PUT, "management/api/**").hasAuthority(COURSE_WRITE.name())   // In this case, the app verifies if the 
-		.antMatchers(HttpMethod.GET, "management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name())//user has the correct permission
-		.anyRequest() //Cualquier request del API
-		.authenticated() // Debe estar autenticado
+		.antMatchers("/api/**").hasRole(STUDENT.name())
+		.antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) //this parameter must be the permission
+		.antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission())   //The user needs this specific permission to access this endpoint
+		.antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission())    //PERMISSION BASED AUTH in action
+		.antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name()) // This is a list of the names of the roles. 
+		.anyRequest()
+		.authenticated() 
 		.and()
-		.httpBasic(); //mecanismo de transmisión
+		.httpBasic(); 
 	}
 
 	@Override
@@ -50,20 +50,23 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 		UserDetails annaSmithUser = User.builder()
 			.username("annasmith")
 			.password(passwordEncoder.encode("password"))
-			.roles(STUDENT.name()) //ROLE_STUDENT - Forma en la que spring entiende el role
+//			.roles(STUDENT.name()) //ROLE_STUDENT - Forma en la que spring entiende el role
+			.authorities(STUDENT.getGrantedAuthorities())
 			.build();
 		
 		UserDetails lindaUser = User.builder()
 			.username("linda")
 			.password(passwordEncoder.encode("password123"))
-			.roles(ADMIN.name())
+//			.roles(ADMIN.name())//ROLE_ADMIN
+			.authorities(ADMIN.getGrantedAuthorities())
 			.build();
 		
 		UserDetails tomUser = User.builder()
-				.username("tom")
-				.password(passwordEncoder.encode("password123"))
-				.roles(ADMINTRAINEE.name()) //ADMINTRAINEE
-				.build();
+			.username("tom")
+			.password(passwordEncoder.encode("password123"))
+//			.roles(ADMINTRAINEE.name()) //ROLE_ADMINTRAINEE
+			.authorities(ADMINTRAINEE.getGrantedAuthorities())
+			.build();
 		
 		
 		return new InMemoryUserDetailsManager(
