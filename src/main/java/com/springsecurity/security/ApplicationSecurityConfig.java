@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
 import static com.springsecurity.security.ApplicationUserPermission.*;
@@ -32,7 +33,15 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
-		.csrf().disable() 
+//		.csrf().disable() //This is enable by default, IT IS RECOMMENDED TO USE csrf() technique when 
+						  //our server is going to be reached from normal users using browsers. 
+		
+//		.csrf().csrfTokenRepository(new CookieCsrfTokenRepository()); //this configuration can be use if we want to 
+																	  //see the cookie on postman
+		
+		.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+		
+		.and()
 		.authorizeRequests()  
 		.antMatchers("/", "index", "/css/*", "/js/*").permitAll()
 		.antMatchers("/api/**").hasRole(STUDENT.name())
@@ -48,7 +57,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 		.anyRequest()
 		.authenticated() 
 		.and()
-		.httpBasic(); 
+		.httpBasic();
 	}
 
 	@Override
