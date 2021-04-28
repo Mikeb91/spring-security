@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
 
@@ -66,7 +67,22 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 		.defaultSuccessUrl("/courses", true) //After a success login this is the web page we´re gonna see.
 		.and()
 		.rememberMe().tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // defaults to 2 weeks  //Token repository when we are using Redis.
-		.key("somethingverysecured"); // Key used to generate our MD5 encoding and generate the cookie. 
+		.key("somethingverysecured") // Key used to generate our MD5 encoding and generate the cookie.
+		.and()
+		.logout()
+			.logoutUrl("/logout") //This is how it comes by default  //We should avoid using a simple get request for loging out. 
+			
+			.logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")) //This is the correct way to configure when definitely we want to use
+																			   //the GET method to logout. However, if CSRF is enabled, this wont work,
+																			   //because it requires a POST method, and even if CSRF is disabled, the post method
+																			   //for logging out is recomended. 
+			
+			.clearAuthentication(true) // After logout we clean the authentication
+			.invalidateHttpSession(true) //after logout we invalidate the httpSession 
+			.deleteCookies("JSESSIONID", "remember-me") // we erase the cookies from client browser
+			.logoutSuccessUrl("/login"); //Redirect to login page. 
+			
+			
 	}
 
 	@Override
