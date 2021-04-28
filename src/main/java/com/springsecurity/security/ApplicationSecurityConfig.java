@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import com.springsecurity.auth.ApplicationUserService;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
 
@@ -28,14 +32,17 @@ import static com.springsecurity.security.ApplicationUserPermission.*;
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 
 	private final PasswordEncoder passwordEncoder;
+	private final ApplicationUserService applicationUserService;
 	
 	@Autowired
-	public ApplicationSecurityConfig(PasswordEncoder passwordEncoder) {
+	public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, ApplicationUserService applicationUserService) {
 		this.passwordEncoder = passwordEncoder;
+		this.applicationUserService = applicationUserService;
 	}
 	
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
+		
 		http
 		.csrf().disable() //This is enable by default, IT IS RECOMMENDED TO USE csrf() technique when 
 						  //our server is going to be reached from normal users using browsers. 
@@ -67,7 +74,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 			.permitAll() 
 			.defaultSuccessUrl("/courses", true) //After a success login this is the web page we´re gonna see.
 			.passwordParameter("password")
-			.usernameParameter("remember-me")
+			.usernameParameter("username")
 		.and()
 		.rememberMe()
 			.tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // defaults to 2 weeks  //Token repository when we are using Redis.
@@ -75,12 +82,12 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 			.rememberMeParameter("remember-me")
 		.and()
 		.logout()
-			.logoutUrl("/logout") //This is how it comes by default  //We should avoid using a simple get request for loging out. 
+			.logoutUrl("/logout") //This is how it comes by default  //We should avoid using a simple get request for logging out. 
 			
 			.logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")) //This is the correct way to configure when definitely we want to use
 																			   //the GET method to logout. However, if CSRF is enabled, this wont work,
 																			   //because it requires a POST method, and even if CSRF is disabled, the post method
-																			   //for logging out is recomended. 
+																			   //for logging out is recommended. 
 			
 			.clearAuthentication(true) // After logout we clean the authentication
 			.invalidateHttpSession(true) //after logout we invalidate the httpSession 
@@ -90,38 +97,55 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 			
 	}
 
+//	@Override
+//	@Bean
+//	protected UserDetailsService userDetailsService() {
+//		UserDetails annaSmithUser = User.builder()
+//			.username("annasmith")
+//			.password(passwordEncoder.encode("password"))
+////			.roles(STUDENT.name()) //ROLE_STUDENT - Forma en la que spring entiende el role
+//			.authorities(STUDENT.getGrantedAuthorities())
+//			.build();
+//		
+//		UserDetails lindaUser = User.builder()
+//			.username("linda")
+//			.password(passwordEncoder.encode("password123"))
+////			.roles(ADMIN.name())//ROLE_ADMIN
+//			.authorities(ADMIN.getGrantedAuthorities())
+//			.build();
+//		
+//		UserDetails tomUser = User.builder()
+//			.username("tom")
+//			.password(passwordEncoder.encode("password123"))
+////			.roles(ADMINTRAINEE.name()) //ROLE_ADMINTRAINEE
+//			.authorities(ADMINTRAINEE.getGrantedAuthorities())
+//			.build();
+//		
+//		
+//		return new InMemoryUserDetailsManager(
+//			annaSmithUser,
+//			lindaUser,
+//			tomUser
+//		);
+//				
+//	}      // This´s been commented due to the new customized implementation of UserDetailService provider from DAO Service. 
+	
+
 	@Override
-	@Bean
-	protected UserDetailsService userDetailsService() {
-		UserDetails annaSmithUser = User.builder()
-			.username("annasmith")
-			.password(passwordEncoder.encode("password"))
-//			.roles(STUDENT.name()) //ROLE_STUDENT - Forma en la que spring entiende el role
-			.authorities(STUDENT.getGrantedAuthorities())
-			.build();
-		
-		UserDetails lindaUser = User.builder()
-			.username("linda")
-			.password(passwordEncoder.encode("password123"))
-//			.roles(ADMIN.name())//ROLE_ADMIN
-			.authorities(ADMIN.getGrantedAuthorities())
-			.build();
-		
-		UserDetails tomUser = User.builder()
-			.username("tom")
-			.password(passwordEncoder.encode("password123"))
-//			.roles(ADMINTRAINEE.name()) //ROLE_ADMINTRAINEE
-			.authorities(ADMINTRAINEE.getGrantedAuthorities())
-			.build();
-		
-		
-		return new InMemoryUserDetailsManager(
-			annaSmithUser,
-			lindaUser,
-			tomUser
-		);
-				
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+		auth.authenticationProvider(daoAuthenticationProvider());
 	}
+	
+	@Bean
+	public DaoAuthenticationProvider daoAuthenticationProvider() {
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setPasswordEncoder(passwordEncoder);
+		provider.setUserDetailsService(applicationUserService);
+		return provider;
+		
+	}
+
+
 	
 	
 }
