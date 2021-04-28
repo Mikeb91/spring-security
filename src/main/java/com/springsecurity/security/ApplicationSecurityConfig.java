@@ -16,6 +16,9 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
+
+import java.util.concurrent.TimeUnit;
+
 import static com.springsecurity.security.ApplicationUserPermission.*;
 
 @Configuration
@@ -60,7 +63,10 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 //		.httpBasic();
 		.formLogin()
 		.loginPage("/login").permitAll() //This is how we can customize the login page, Check it out on templates/login.hmtl
-		.defaultSuccessUrl("/courses", true); //After a success login this is the web page we´re gonna see. 
+		.defaultSuccessUrl("/courses", true) //After a success login this is the web page we´re gonna see.
+		.and()
+		.rememberMe().tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // defaults to 2 weeks  //Token repository when we are using Redis.
+		.key("somethingverysecured"); // Key used to generate our MD5 encoding and generate the cookie. 
 	}
 
 	@Override
