@@ -63,11 +63,16 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 		.and()
 //		.httpBasic();
 		.formLogin()
-		.loginPage("/login").permitAll() //This is how we can customize the login page, Check it out on templates/login.hmtl
-		.defaultSuccessUrl("/courses", true) //After a success login this is the web page we´re gonna see.
+			.loginPage("/login") //This is how we can customize the login page, Check it out on templates/login.hmtl
+			.permitAll() 
+			.defaultSuccessUrl("/courses", true) //After a success login this is the web page we´re gonna see.
+			.passwordParameter("password")
+			.usernameParameter("remember-me")
 		.and()
-		.rememberMe().tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // defaults to 2 weeks  //Token repository when we are using Redis.
-		.key("somethingverysecured") // Key used to generate our MD5 encoding and generate the cookie.
+		.rememberMe()
+			.tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // defaults to 2 weeks  //Token repository when we are using Redis.
+			.key("somethingverysecured") // Key used to generate our MD5 encoding and generate the cookie.
+			.rememberMeParameter("remember-me")
 		.and()
 		.logout()
 			.logoutUrl("/logout") //This is how it comes by default  //We should avoid using a simple get request for loging out. 
