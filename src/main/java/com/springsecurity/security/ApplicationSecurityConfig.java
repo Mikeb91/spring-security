@@ -20,12 +20,15 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.springsecurity.auth.ApplicationUserService;
+import com.springsecurity.jwt.JwtConfig;
 import com.springsecurity.jwt.JwtTokenVerifier;
 import com.springsecurity.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
 
 import java.util.concurrent.TimeUnit;
+
+import javax.crypto.SecretKey;
 
 import static com.springsecurity.security.ApplicationUserPermission.*;
 
@@ -36,13 +39,18 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 
 	private final PasswordEncoder passwordEncoder;
 	private final ApplicationUserService applicationUserService;
+	private final SecretKey secretKey;
+	private final JwtConfig jwtConfig;
 	
 	@Autowired
-	public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, ApplicationUserService applicationUserService) {
+	public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, ApplicationUserService applicationUserService,
+			SecretKey secretKey, JwtConfig jwtConfig) {
 		this.passwordEncoder = passwordEncoder;
 		this.applicationUserService = applicationUserService;
+		this.secretKey = secretKey;
+		this.jwtConfig = jwtConfig;
 	}
-	
+
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		
@@ -59,10 +67,10 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 		.sessionManagement()
 			.sessionCreationPolicy(SessionCreationPolicy.STATELESS) //This is to configure our authentication method (JWT) as STATELESS
 		.and()
-		.addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) //Here we´re adding our filter to the validation
+		.addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig, secretKey)) //Here we´re adding our filter to the validation
 		  															                    	//This filter receives authenticationManager from 
 																							//superclass.
-		.addFilterAfter(new JwtTokenVerifier(), JwtUsernameAndPasswordAuthenticationFilter.class) //The parameters are the filter to execute and
+		.addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig), JwtUsernameAndPasswordAuthenticationFilter.class) //The parameters are the filter to execute and
 																								  //the filter that occurs before the one we want
 																								  //to execute. 
 		.authorizeRequests()

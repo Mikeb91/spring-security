@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.crypto.SecretKey;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,29 +28,39 @@ import io.jsonwebtoken.security.Keys;
 
 public class JwtTokenVerifier extends OncePerRequestFilter{
 
+	private final SecretKey secretKey;
+	private final JwtConfig jwtConfig;
+	
+	public JwtTokenVerifier(SecretKey secretKey, JwtConfig jwtConfig) {
+		this.secretKey = secretKey;
+		this.jwtConfig = jwtConfig;
+	}
+	
+
+
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 	
 		//this filter require to be executed just once per request. 
 		
-		String authorizationHeader = request.getHeader("Authorization");
-		String token = authorizationHeader.replace("Bearer ", "");
-		if(Strings.isNullOrEmpty(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+		String authorizationHeader = request.getHeader(jwtConfig.getAuthorizationHeader());
+		String token = authorizationHeader.replace(jwtConfig.getTokenPrefix(), "");
+		if(Strings.isNullOrEmpty(authorizationHeader) || !authorizationHeader.startsWith(jwtConfig.getTokenPrefix())) {
 			filterChain.doFilter(request, response);
 			return;
 		}
 		
 		try {
 			
-			String secretKey = "securesecuresecuresecuresecuresecuresecuresecuresecuresecuresecuresecuresecure";
 			
 //			Jws<Claims> claimsJws =  Jwts.parser()
 //					.setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
 //					.parseClaimsJws(token);
 			
 			Jws<Claims> claimsJws = Jwts.parserBuilder()
-					.setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
+					.setSigningKey(secretKey)
 					.build()
 					.parseClaimsJws(token);
 			
@@ -57,6 +68,7 @@ public class JwtTokenVerifier extends OncePerRequestFilter{
 			
 			String username = body.getSubject();
 			
+			@SuppressWarnings("unchecked")
 			var authorities = (List<Map<String, String>>) body.get("authorities");
 			
 			Set<SimpleGrantedAuthority> simpleGrantedAuthorities =  authorities.stream()
