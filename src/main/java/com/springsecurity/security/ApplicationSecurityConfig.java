@@ -20,6 +20,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.springsecurity.auth.ApplicationUserService;
+import com.springsecurity.jwt.JwtTokenVerifier;
 import com.springsecurity.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
@@ -59,8 +60,12 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 			.sessionCreationPolicy(SessionCreationPolicy.STATELESS) //This is to configure our authentication method (JWT) as STATELESS
 		.and()
 		.addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) //Here we´re adding our filter to the validation
-		.authorizeRequests()  																//This filter receives authenticationManager from 
+		  															                    	//This filter receives authenticationManager from 
 																							//superclass.
+		.addFilterAfter(new JwtTokenVerifier(), JwtUsernameAndPasswordAuthenticationFilter.class) //The parameters are the filter to execute and
+																								  //the filter that occurs before the one we want
+																								  //to execute. 
+		.authorizeRequests()
 		.antMatchers("/", "index", "/css/*", "/js/*").permitAll()
 		.antMatchers("/api/**").hasRole(STUDENT.name())
 		//The order of antMatchers matters. It is sequentially evaluated so if we want to prevent an user
