@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,6 +20,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.springsecurity.auth.ApplicationUserService;
+import com.springsecurity.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 
 import static com.springsecurity.security.ApplicationUserRole.*;
 
@@ -53,7 +55,12 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 //		.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
 		
 //		.and()
-		.authorizeRequests()  
+		.sessionManagement()
+			.sessionCreationPolicy(SessionCreationPolicy.STATELESS) //This is to configure our authentication method (JWT) as STATELESS
+		.and()
+		.addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) //Here we´re adding our filter to the validation
+		.authorizeRequests()  																//This filter receives authenticationManager from 
+																							//superclass.
 		.antMatchers("/", "index", "/css/*", "/js/*").permitAll()
 		.antMatchers("/api/**").hasRole(STUDENT.name())
 		//The order of antMatchers matters. It is sequentially evaluated so if we want to prevent an user
@@ -66,34 +73,9 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 //		.antMatchers(HttpMethod.GET, "/management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name()) 
 		//this has been commented because now we are implementing @PreAuthorize. Check StudentManagementController. 
 		.anyRequest()
-		.authenticated() 
-		.and()
-//		.httpBasic();
-		.formLogin()
-			.loginPage("/login") //This is how we can customize the login page, Check it out on templates/login.hmtl
-			.permitAll() 
-			.defaultSuccessUrl("/courses", true) //After a success login this is the web page we´re gonna see.
-			.passwordParameter("password")
-			.usernameParameter("username")
-		.and()
-		.rememberMe()
-			.tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21)) // defaults to 2 weeks  //Token repository when we are using Redis.
-			.key("somethingverysecured") // Key used to generate our MD5 encoding and generate the cookie.
-			.rememberMeParameter("remember-me")
-		.and()
-		.logout()
-			.logoutUrl("/logout") //This is how it comes by default  //We should avoid using a simple get request for logging out. 
-			
-			.logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")) //This is the correct way to configure when definitely we want to use
-																			   //the GET method to logout. However, if CSRF is enabled, this wont work,
-																			   //because it requires a POST method, and even if CSRF is disabled, the post method
-																			   //for logging out is recommended. 
-			
-			.clearAuthentication(true) // After logout we clean the authentication
-			.invalidateHttpSession(true) //after logout we invalidate the httpSession 
-			.deleteCookies("JSESSIONID", "remember-me") // we erase the cookies from client browser
-			.logoutSuccessUrl("/login"); //Redirect to login page. 
-			
+		.authenticated();
+
+		
 			
 	}
 
